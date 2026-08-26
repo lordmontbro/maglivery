@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | Maglivery</title>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* --- CSS RESET & DARK GOLD / NAVY BLUE VARIABLES --- */
+    :root {
+      --primary: #D4AF37;          /* Classic Gold */
+      --primary-dark: #AA820A;     /* Deep Gold */
+      --accent: #FFD700;           /* Bright Gold Accent */
+      --bg-dark: #050B14;          /* Ultra Dark Navy */
+      --bg-card: #0A1424;          /* Dark Navy Card */
+      --bg-surface: #101E36;       /* Medium Navy Surface */
+      --text-main: #FFFFFF;
+      --text-sub: #8B9BB4;         /* Soft Navy-Grey Text */
+      --border-color: rgba(212, 175, 55, 0.18); /* Subtle Gold Border */
+      --radius: 12px;
+      --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4, .brand-font {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* --- OVERRIDE FOR #nofont HASH --- */
+    body.no-font, 
+    body.no-font h1, 
+    body.no-font h2, 
+    body.no-font h3, 
+    body.no-font h4, 
+    body.no-font .brand-font {
+      font-family: Arial, sans-serif !important;
+    }
+
+    /* --- NAVIGATION --- */
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(5, 11, 20, 0.90);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .logo span {
+      color: var(--primary);
+    }
+
+    .logo i {
+      color: var(--accent);
+    }
+
+    .btn-home {
+      background: var(--primary);
+      color: var(--bg-dark);
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .btn-home:hover {
+      background: var(--accent);
+    }
+
+    /* --- 404 CONTENT --- */
+    .error-container {
+      flex: 1;
+      margin-top: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      text-align: center;
+      background: radial-gradient(circle at 50% 40%, rgba(212, 175, 55, 0.12) 0%, rgba(5, 11, 20, 0) 70%);
+    }
+
+    .error-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 3rem 2rem;
+      max-width: 550px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    .error-icon {
+      font-size: 4rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .error-code {
+      font-size: 5rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .error-card h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .error-card p {
+      color: var(--text-sub);
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary);
+      color: var(--bg-dark);
+      padding: 0.8rem 1.8rem;
+      border-radius: 30px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .btn-main:hover {
+      background: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--accent);
+      padding: 0.8rem 1.8rem;
+      border-radius: 30px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      background: rgba(212, 175, 55, 0.15);
+    }
+
+    /* --- FOOTER --- */
+    footer {
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-card);
+      padding: 2rem 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .footer-copy {
+      color: var(--text-sub);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="website.html" class="logo">
+      <i class="fa-solid fa-magnet"></i> MAGLIVERY<span>.</span>
+    </a>
+    <a href="lordmontbro.github.io/maglivery" class="btn-home">Back to Store</a>
+  </nav>
+
+  <!-- ERROR SECTION -->
+  <main class="error-container">
+    <div class="error-card">
+      <div class="error-icon">
+        <i class="fa-solid fa-magnet"></i>
+      </div>
+      <div class="error-code">404</div>
+      <h1>Path Disconnected!</h1>
+      <p>Looks like the magnetic path you are looking for has been disconnected or doesn't exist.</p>
+      
+      <div class="action-btns">
+        <a href="website.html" class="btn-main">
+          <i class="fa-solid fa-house"></i> Return Home
+        </a>
+        <a href="website.html#shop" class="btn-secondary">
+          <i class="fa-solid fa-cart-shopping"></i> Browse Shop
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-content">
+      <a href="website.html" class="logo">
+        <i class="fa-solid fa-magnet"></i> MAGLIVERY<span>.</span>
+      </a>
+      <div class="footer-copy">
+        &copy; <span id="year"></span> Maglivery Inc. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT -->
+  <script>
+    // Handle #nofont Hash Override
+    function handleNoFontHash() {
+      if (window.location.hash === '#nofont') {
+        document.body.classList.add('no-font');
+      } else {
+        document.body.classList.remove('no-font');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', handleNoFontHash);
+    window.addEventListener('hashchange', handleNoFontHash);
+
+    // Set Copyright Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

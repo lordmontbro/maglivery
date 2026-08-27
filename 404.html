@@ -4,11 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 - Page Not Found | Maglivery</title>
+  
   <!-- Google Fonts & Font Awesome Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Supabase JS Library for Auth -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     /* --- CSS RESET & DARK GOLD / NAVY BLUE VARIABLES --- */
@@ -47,14 +51,16 @@
       font-family: 'Space Grotesk', sans-serif;
     }
 
-    /* --- OVERRIDE FOR #nofont HASH --- */
-    body.no-font, 
-    body.no-font h1, 
-    body.no-font h2, 
-    body.no-font h3, 
-    body.no-font h4, 
-    body.no-font .brand-font {
-      font-family: Arial, sans-serif !important;
+    /* --- VIEW SECTIONS (STATE SWITCHING) --- */
+    .view-section {
+      display: none;
+      flex: 1;
+      width: 100%;
+    }
+
+    .view-section.active {
+      display: flex;
+      flex-direction: column;
     }
 
     /* --- NAVIGATION --- */
@@ -105,7 +111,7 @@
       background: var(--accent);
     }
 
-    /* --- 404 CONTENT --- */
+    /* --- CONTAINER & CARDS --- */
     .error-container {
       flex: 1;
       margin-top: 70px;
@@ -125,6 +131,11 @@
       max-width: 550px;
       width: 100%;
       box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    .admin-card {
+      max-width: 900px;
+      text-align: left;
     }
 
     .error-icon {
@@ -152,6 +163,7 @@
       margin-bottom: 2rem;
     }
 
+    /* --- BUTTONS --- */
     .action-btns {
       display: flex;
       gap: 1rem;
@@ -169,6 +181,8 @@
       border-radius: 30px;
       font-weight: 800;
       text-decoration: none;
+      border: none;
+      cursor: pointer;
       transition: var(--transition);
     }
 
@@ -188,12 +202,52 @@
       border-radius: 30px;
       font-weight: 600;
       text-decoration: none;
+      border: none;
+      cursor: pointer;
       transition: var(--transition);
     }
 
     .btn-secondary:hover {
       border-color: var(--primary);
       background: rgba(212, 175, 55, 0.15);
+    }
+
+    /* --- PAYMENT HISTORY TABLE --- */
+    .table-wrapper {
+      margin-top: 1.5rem;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: var(--bg-surface);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status-badge {
+      background: rgba(46, 204, 113, 0.15);
+      color: #2ecc71;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
     }
 
     /* --- FOOTER --- */
@@ -217,67 +271,216 @@
       color: var(--text-sub);
       font-size: 0.85rem;
     }
+
+    .secret-trigger {
+      cursor: pointer;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <a href="website.html" class="logo">
+    <a href="https://lordmontbro.github.io/maglivery/" class="logo">
       <i class="fa-solid fa-magnet"></i> MAGLIVERY<span>.</span>
     </a>
-    <a href="lordmontbro.github.io/maglivery" class="btn-home">Back to Store</a>
+    <a href="https://lordmontbro.github.io/maglivery/" class="btn-home">Back to Store</a>
   </nav>
 
-  <!-- ERROR SECTION -->
-  <main class="error-container">
-    <div class="error-card">
-      <div class="error-icon">
-        <i class="fa-solid fa-magnet"></i>
+  <!-- VIEW 1: STEALTH 404 PAGE (DEFAULT DISPLAY) -->
+  <div id="404-view" class="view-section active">
+    <main class="error-container">
+      <div class="error-card">
+        <div class="error-icon">
+          <i class="fa-solid fa-magnet"></i>
+        </div>
+        <div class="error-code">404</div>
+        <h1>Path Disconnected!</h1>
+        <p>Looks like the magnetic path you are looking for has been disconnected or doesn't exist.</p>
+        
+        <div class="action-btns">
+          <a href="https://lordmontbro.github.io/maglivery/" class="btn-main">
+            <i class="fa-solid fa-house"></i> Return Home
+          </a>
+          <a href="https://lordmontbro.github.io/maglivery/#shop" class="btn-secondary">
+            <i class="fa-solid fa-cart-shopping"></i> Browse Shop
+          </a>
+        </div>
       </div>
-      <div class="error-code">404</div>
-      <h1>Path Disconnected!</h1>
-      <p>Looks like the magnetic path you are looking for has been disconnected or doesn't exist.</p>
-      
-      <div class="action-btns">
-        <a href="/#" class="btn-main">
-          <i class="fa-solid fa-house"></i> Return Home
-        </a>
-        <a href="/#shop" class="btn-secondary">
-          <i class="fa-solid fa-cart-shopping"></i> Browse Shop
-        </a>
+    </main>
+  </div>
+
+  <!-- VIEW 2: LOGIN SELECTION -->
+  <div id="login-view" class="view-section">
+    <main class="error-container">
+      <div class="error-card">
+        <div class="error-icon">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <h1>Owner Authentication</h1>
+        <p>Sign in with an authorized account to access administrative records.</p>
+        
+        <div class="action-btns">
+          <button class="btn-main" onclick="loginWithDiscord()">
+            <i class="fa-brands fa-discord"></i> Discord Sign In
+          </button>
+          <button class="btn-secondary" onclick="loginWithGoogle()">
+            <i class="fa-brands fa-google"></i> Google Sign In
+          </button>
+        </div>
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
+
+  <!-- VIEW 3: ADMIN DASHBOARD & PAYMENT HISTORY -->
+  <div id="admin-view" class="view-section">
+    <main class="error-container">
+      <div class="error-card admin-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h2><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> Payment Records</h2>
+          <button class="btn-secondary" onclick="downloadCSV()">
+            <i class="fa-solid fa-download"></i> Export CSV
+          </button>
+        </div>
+
+        <p>Authenticated access to stored store transactions and receipt records.</p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Transaction ID</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="payment-table-body">
+              <!-- Dynamically populated or rendered from records -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+          <button class="btn-secondary" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+          </button>
+          <span id="owner-tag" style="color: var(--text-sub); font-size: 0.85rem;"></span>
+        </div>
+      </div>
+    </main>
+  </div>
 
   <!-- FOOTER -->
   <footer>
     <div class="footer-content">
-      <a href="website.html" class="logo">
+      <a href="https://lordmontbro.github.io/maglivery/" class="logo">
         <i class="fa-solid fa-magnet"></i> MAGLIVERY<span>.</span>
       </a>
       <div class="footer-copy">
-        &copy; <span id="year"></span> Maglivery Inc. All Rights Reserved.
+        &copy; <span id="year"></span> <span id="secret-trigger" class="secret-trigger">Maglivery</span> Inc. All Rights Reserved.
       </div>
     </div>
   </footer>
 
-  <!-- JAVASCRIPT -->
+  <!-- SCRIPT -->
   <script>
-    // Handle #nofont Hash Override
-    function handleNoFontHash() {
-      if (window.location.hash === '#nofont') {
-        document.body.classList.add('no-font');
+    // Configuration
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const OWNER_DISCORD_ID = "YOUR_DISCORD_USER_ID";
+
+    // Sample Payment History Data
+    const paymentRecords = [
+      { date: "2026-08-20", id: "TXN-88219", customer: "alex@example.com", amount: "$49.99", status: "Completed" },
+      { date: "2026-08-22", id: "TXN-88220", customer: "sam@example.com", amount: "$129.00", status: "Completed" },
+      { date: "2026-08-25", id: "TXN-88221", customer: "jordan@example.com", amount: "$15.50", status: "Completed" }
+    ];
+
+    // Initialize Supabase
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function showView(viewId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
+
+    // Five consecutive clicks on the footer copyright name reveals the login screen
+    let clicks = 0;
+    document.getElementById('secret-trigger').addEventListener('click', () => {
+      clicks++;
+      if (clicks >= 5) {
+        showView('login-view');
+        clicks = 0;
+      }
+    });
+
+    // Auth Handlers
+    async function loginWithDiscord() {
+      await supabaseClient.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { redirectTo: window.location.href }
+      });
+    }
+
+    async function loginWithGoogle() {
+      await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.href }
+      });
+    }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      showView('404-view');
+    }
+
+    // Populate Payment Table
+    function renderPayments() {
+      const tbody = document.getElementById('payment-table-body');
+      tbody.innerHTML = paymentRecords.map(item => `
+        <tr>
+          <td>${item.date}</td>
+          <td><code>${item.id}</code></td>
+          <td>${item.customer}</td>
+          <td style="color: var(--accent); font-weight: 600;">${item.amount}</td>
+          <td><span class="status-badge">${item.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Export Payment Data to CSV File
+    function downloadCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Date,Transaction ID,Customer,Amount,Status\n";
+      paymentRecords.forEach(r => {
+        csvContent += `${r.date},${r.id},${r.customer},${r.amount},${r.status}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "maglivery_payment_history.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Verify Session and Role
+    async function checkUserSession() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+
+      if (user && user.user_metadata?.sub === OWNER_DISCORD_ID) {
+        document.getElementById('owner-tag').textContent = `Logged in as: ${user.email || user.user_metadata?.full_name}`;
+        renderPayments();
+        showView('admin-view');
       } else {
-        document.body.classList.remove('no-font');
+        showView('404-view');
       }
     }
 
-    window.addEventListener('DOMContentLoaded', handleNoFontHash);
-    window.addEventListener('hashchange', handleNoFontHash);
-
-    // Set Copyright Year
     document.getElementById('year').textContent = new Date().getFullYear();
+    checkUserSession();
   </script>
 </body>
 </html>

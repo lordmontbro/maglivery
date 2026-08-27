@@ -1524,6 +1524,28 @@
       document.getElementById('modalTotal').textContent = formatPrice(subtotal);
     }
 
+    <!-- AUTHENTICATION SECTION FOR INDEX.HTML -->
+<section id="auth-section" class="auth-container">
+  <div class="auth-card">
+    <h2><i class="fa-solid fa-user-lock"></i> Account Access</h2>
+    <p>Sign in or create an account with your social profile.</p>
+
+    <div class="auth-buttons">
+      <button class="btn-main" onclick="handleSocialAuth('discord')">
+        <i class="fa-brands fa-discord"></i> Continue with Discord
+      </button>
+      <button class="btn-secondary" onclick="handleSocialAuth('google')">
+        <i class="fa-brands fa-google"></i> Continue with Google
+      </button>
+    </div>
+
+    <div id="user-status" class="user-status-box" style="display: none;">
+      <p id="welcome-message"></p>
+      <button class="btn-secondary" onclick="handleSignOut()">Sign Out</button>
+    </div>
+  </div>
+</section>
+
     // 7. OVERLAY & MODAL TOGGLES
     const cartOverlay = document.getElementById('cartOverlay');
     const checkoutModal = document.getElementById('checkoutModal');

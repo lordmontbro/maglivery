@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | Maglivery</title>
+  
+  <!-- Supabase JS Library (For 3rd Party Auth) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    /* Styling matches your site's dark navy & gold design */
+    :root {
+      --primary: #D4AF37;
+      --bg-dark: #050B14;
+      --bg-card: #0A1424;
+      --text-main: #FFFFFF;
+      --text-sub: #8B9BB4;
+      --border-color: rgba(212, 175, 55, 0.18);
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Secret Login Overlay (Hidden 404 state by default) */
+    .view-section {
+      display: none;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .active {
+      display: flex !important;
+      flex-direction: column;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 3rem;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: var(--bg-dark);
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- VIEW 1: DEFAULT 404 PAGE (What regular users see) -->
+  <div id="404-view" class="view-section active">
+    <div class="card">
+      <h1 style="font-size: 4rem; color: var(--primary); margin: 0;">404</h1>
+      <h2>Path Disconnected!</h2>
+      <p style="color: var(--text-sub);">The page you are looking for does not exist.</p>
+      <a href="https://lordmontbro.github.io/maglivery/" class="btn" style="text-decoration:none; display:inline-block;">Return Home</a>
+      
+      <!-- Secret Admin Trigger (e.g., clicking a subtle hidden element or triple-clicking) -->
+      <p id="secret-trigger" style="margin-top: 3rem; opacity: 0.1; cursor: pointer;">&copy; Maglivery</p>
+    </div>
+  </div>
+
+  <!-- VIEW 2: LOGIN MODAL (Triggered only via secret key/action) -->
+  <div id="login-view" class="view-section">
+    <div class="card">
+      <h2>Admin Sign In</h2>
+      <p style="color: var(--text-sub);">Authenticate to access owner controls.</p>
+      <button class="btn" onclick="loginWithDiscord()">Sign in with Discord</button>
+      <button class="btn" onclick="loginWithGoogle()">Sign in with Google</button>
+    </div>
+  </div>
+
+  <!-- VIEW 3: ACTUAL ADMIN DASHBOARD (Only shown if user ID matches owner) -->
+  <div id="admin-view" class="view-section">
+    <div class="card" style="max-width: 800px;">
+      <h1 style="color: var(--primary);">Owner Dashboard</h1>
+      <p>Welcome back, Owner!</p>
+      <div id="admin-content">
+        <!-- Add your store controls, inventory toggles, or metrics here -->
+      </div>
+      <button class="btn" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase Client
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Replace with your actual Discord or Google User ID
+    const OWNER_USER_ID = "YOUR_EXACT_USER_ID"; 
+
+    // Switch views safely
+    function showView(viewId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
+
+    // Secret trigger logic: Clicking copyright text 5 times reveals login
+    let clickCount = 0;
+    document.getElementById('secret-trigger').addEventListener('click', () => {
+      clickCount++;
+      if (clickCount >= 5) {
+        showView('login-view');
+      }
+    });
+
+    // Authentication Handlers
+    async function loginWithDiscord() {
+      await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { redirectTo: window.location.href }
+      });
+    }
+
+    async function loginWithGoogle() {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.href }
+      });
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      showView('404-view');
+    }
+
+    // Check auth status on page load
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user && user.id === OWNER_USER_ID) {
+        // Authenticated as Owner
+        showView('admin-view');
+      } else {
+        // Not logged in or not the owner -> Show standard 404 page
+        showView('404-view');
+      }
+    }
+
+    checkAuth();
+  </script>
+</body>
+</html>

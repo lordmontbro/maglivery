@@ -9,6 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     /* --- CSS RESET & DARK GOLD / NAVY BLUE VARIABLES --- */
     html {
@@ -795,7 +798,7 @@
       gap: 1rem;
     }
 
-    /* --- AUTH MODAL STYLES (ENHANCED SMOOTH ANIMATIONS) --- */
+    /* --- AUTH MODAL STYLES (ENHANCED SMOOTH ANIMATIONS & SOCIAL BUTTONS) --- */
     .auth-overlay {
       position: fixed;
       top: 0;
@@ -863,7 +866,7 @@
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 4px;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     .tab-btn {
@@ -894,6 +897,68 @@
       box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
       z-index: 1;
       transition: transform var(--transition-speed) var(--transition-curve);
+    }
+
+    .social-auth-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .btn-social {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: var(--transition);
+      color: #fff;
+      background: var(--bg-surface);
+    }
+
+    .btn-social.discord {
+      background: #5865F2;
+      border-color: #5865F2;
+    }
+
+    .btn-social.discord:hover {
+      background: #4752C4;
+    }
+
+    .btn-social.google {
+      background: #4285F4;
+      border-color: #4285F4;
+    }
+
+    .btn-social.google:hover {
+      background: #3367D6;
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 0.8rem;
+      margin: 1.2rem 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .auth-divider span {
+      padding: 0 0.5rem;
     }
 
     .forms-wrapper {
@@ -1167,6 +1232,20 @@
         <div class="slider-bar" id="sliderBar"></div>
       </div>
 
+      <!-- GOOGLE AND DISCORD SIGNUP/SIGNIN SECTION -->
+      <div class="social-auth-container">
+        <button class="btn-social google" onclick="handleSocialAuth('google')">
+          <i class="fa-brands fa-google"></i> Continue with Google
+        </button>
+        <button class="btn-social discord" onclick="handleSocialAuth('discord')">
+          <i class="fa-brands fa-discord"></i> Continue with Discord
+        </button>
+      </div>
+
+      <div class="auth-divider">
+        <span>OR EMAIL</span>
+      </div>
+
       <div class="forms-wrapper">
         <div class="forms-slider" id="formsSlider">
           
@@ -1204,6 +1283,11 @@
   </div>
 
   <script>
+    // SUPABASE INTEGRATION SETUP
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const supabaseClient = window.supabase ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
     // 1. CURRENCY CONVERSION CONFIG (BASE = AUD)
     let currentCurrency = 'AUD';
     const currencyRates = {
@@ -1582,7 +1666,7 @@
       });
     });
 
-    // 9. AUTHENTICATION (LOGIN / REGISTER WITH SLIDING INDICATOR & ANIMATION)
+    // 9. AUTHENTICATION (LOGIN / REGISTER WITH SOCIAL OAUTH & SLIDING INDICATOR)
     function openAuth(type) {
       authOverlay.classList.add('active');
       switchAuthTab(type);
@@ -1612,6 +1696,28 @@
       }
     }
 
+    // Social Authentication (Google / Discord)
+    async function handleSocialAuth(providerName) {
+      if (supabaseClient) {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+          provider: providerName,
+          options: {
+            redirectTo: window.location.href
+          }
+        });
+        if (error) alert('Auth Error: ' + error.message);
+      } else {
+        // Fallback for demo without active Supabase credentials
+        const mockUser = {
+          name: providerName === 'google' ? 'Google User' : 'Discord User',
+          email: `user@${providerName}.com`
+        };
+        localStorage.setItem('maglivery_user', JSON.stringify(mockUser));
+        checkAuthState();
+        closeAuth();
+      }
+    }
+
     function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
@@ -1634,17 +1740,35 @@
       closeAuth();
     }
 
-    function logoutUser() {
+    async function logoutUser() {
+      if (supabaseClient) {
+        await supabaseClient.auth.signOut();
+      }
       localStorage.removeItem('maglivery_user');
       checkAuthState();
     }
 
-    function checkAuthState() {
+    async function checkAuthState() {
       const container = document.getElementById('authNavControls');
-      const savedUser = localStorage.getItem('maglivery_user');
+      let user = null;
 
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
+      if (supabaseClient) {
+        const { data } = await supabaseClient.auth.getUser();
+        if (data && data.user) {
+          user = {
+            name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
+            email: data.user.email
+          };
+          localStorage.setItem('maglivery_user', JSON.stringify(user));
+        }
+      }
+
+      if (!user) {
+        const savedUser = localStorage.getItem('maglivery_user');
+        if (savedUser) user = JSON.parse(savedUser);
+      }
+
+      if (user) {
         container.innerHTML = `
           <div class="user-greeting">
             <i class="fa-solid fa-user-check"></i>

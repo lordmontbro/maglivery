@@ -47,12 +47,14 @@
     button#clear-btn { background: #ff0055; color: #fff; }
     
     #stats { margin-top: 12px; font-size: 1.2rem; font-weight: bold; }
+    .info { margin-top: 5px; color: #4deeea; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <h1>Maglivery Express</h1>
-  <p>Select a track type, click to place on the grid, then hit R to rotate turns!</p>
+  <p>Select a track type, click to place on the grid, and press <b>R</b> to rotate selected track orientation!</p>
+  <div class="info">Current Rotation: <span id="rot-display">0°</span></div>
 
   <div id="game-container">
     <canvas id="gameCanvas" width="640" height="400"></canvas>
@@ -60,7 +62,7 @@
 
   <div class="controls">
     <button id="tool-straight" class="active">Straight Track</button>
-    <button id="tool-turn">Turn Track (Press R to Rotate)</button>
+    <button id="tool-turn">Turn Track</button>
     <button id="tool-boost">Mag-Booster</button>
     <button id="launch-btn">🚀 Launch</button>
     <button id="clear-btn">Clear Board</button>
@@ -74,7 +76,6 @@
 
     const GRID_SIZE = 40;
     
-    // Absolute GitHub URLs (Note: path set to gamestacks)
     const imageSources = {
       straight: 'https://lordmontbro.github.io/maglivery/images/gamestacks/straight.png',
       turn: 'https://lordmontbro.github.io/maglivery/images/gamestacks/90turn.png',
@@ -85,10 +86,9 @@
     const images = {};
     const loadedStatus = {};
 
-    // Load Hosted Images
     for (let key in imageSources) {
       images[key] = new Image();
-      images[key].crossOrigin = 'anonymous'; // Prevents CORS canvas blocking
+      images[key].crossOrigin = 'anonymous';
       images[key].src = imageSources[key];
       loadedStatus[key] = false;
       images[key].onload = () => { loadedStatus[key] = true; };
@@ -96,23 +96,27 @@
     }
 
     let selectedTool = 'straight';
-    let currentRotation = 0;
+    let currentRotation = 0; // 0, 90, 180, 270
     let tracks = {};
     let score = 0;
 
     const kitchen = { x: 1, y: 5 };
     const customer = { x: 14, y: 5 };
 
+    // Movement Directions: 0=Right, 1=Down, 2=Left, 3=Up
+    const DX = [1, 0, -1, 0];
+    const DY = [0, 1, 0, -1];
+
     let dish = {
       x: kitchen.x * GRID_SIZE + GRID_SIZE / 2,
       y: kitchen.y * GRID_SIZE + GRID_SIZE / 2,
-      vx: 0,
-      vy: 0,
+      dir: 0, // Starts moving Right
       active: false,
-      speed: 3
+      speed: 2,
+      lastGridX: -1,
+      lastGridY: -1
     };
 
-    // UI Control Listeners
     document.getElementById('tool-straight').addEventListener('click', (e) => setTool('straight', e.target));
     document.getElementById('tool-turn').addEventListener('click', (e) => setTool('turn', e.target));
     document.getElementById('tool-boost').addEventListener('click', (e) => setTool('boost', e.target));
@@ -122,6 +126,7 @@
     window.addEventListener('keydown', (e) => {
       if (e.key === 'r' || e.key === 'R') {
         currentRotation = (currentRotation + 90) % 360;
+        document.getElementById('rot-display').innerText = currentRotation + '°';
       }
     });
 
@@ -155,47 +160,95 @@
       if (dish.active) return;
       resetDish();
       dish.active = true;
-      dish.vx = dish.speed;
+      dish.dir = 0; // Move right initially
     }
 
     function resetDish() {
       dish.x = kitchen.x * GRID_SIZE + GRID_SIZE / 2;
       dish.y = kitchen.y * GRID_SIZE + GRID_SIZE / 2;
-      dish.vx = 0;
-      dish.vy = 0;
+      dish.dir = 0;
       dish.active = false;
-      dish.speed = 3;
+      dish.speed = 2;
+      dish.lastGridX = -1;
+      dish.lastGridY = -1;
     }
 
     function update() {
       if (!dish.active) return;
 
-      dish.x += dish.vx;
-      dish.y += dish.vy;
+      // Move dish based on current direction
+      dish.x += DX[dish.dir] * dish.speed;
+      dish.y += DY[dish.dir] * dish.speed;
 
-      const currentGridX = Math.floor(dish.x / GRID_SIZE);
-      const currentGridY = Math.floor(dish.y / GRID_SIZE);
-      const key = `${currentGridX},${currentGridY}`;
+      const gridX = Math.floor(dish.x / GRID_SIZE);
+      const gridY = Math.floor(dish.y / GRID_SIZE);
+      const cellCenterX = gridX * GRID_SIZE + GRID_SIZE / 2;
+      const cellCenterY = gridY * GRID_SIZE + GRID_SIZE / 2;
 
-      if (tracks[key] && tracks[key].type === 'boost') {
-        if (dish.vx > 0) dish.vx = 7;
-        if (dish.vx < 0) dish.vx = -7;
-        if (dish.vy > 0) dish.vy = 7;
-        if (dish.vy < 0) dish.vy = -7;
+      // Check turning at cell centers
+      const distToCenter = Math.hypot(dish.x - cellCenterX, dish.y - cellCenterY);
+
+      if (distToCenter < dish.speed && (gridX !== dish.lastGridX || gridY !== dish.lastGridY)) {
+        const key = `${gridX},${gridY}`;
+        const track = tracks[key];
+
+        if (track) {
+          // Center the dish precisely
+          dish.x = cellCenterX;
+          dish.y = cellCenterY;
+          dish.lastGridX = gridX;
+          dish.lastGridY = gridY;
+
+          if (track.type === 'boost') {
+            dish.speed = 4;
+          }
+
+          if (track.type === 'turn') {
+            // Path logic based on 90-degree curve rotation
+            const rot = track.rotation;
+            if (rot === 0) {
+              if (dish.dir === 0) dish.dir = 1;      // Right -> Down
+              else if (dish.dir === 3) dish.dir = 2; // Up -> Left
+              else dish.active = false;              // Derail
+            } else if (rot === 90) {
+              if (dish.dir === 1) dish.dir = 2;      // Down -> Left
+              else if (dish.dir === 0) dish.dir = 3; // Right -> Up
+              else dish.active = false;
+            } else if (rot === 180) {
+              if (dish.dir === 2) dish.dir = 3;      // Left -> Up
+              else if (dish.dir === 1) dish.dir = 0; // Down -> Right
+              else dish.active = false;
+            } else if (rot === 270) {
+              if (dish.dir === 3) dish.dir = 0;      // Up -> Right
+              else if (dish.dir === 2) dish.dir = 1; // Left -> Down
+              else dish.active = false;
+            }
+          } else if (track.type === 'straight') {
+            // Check alignment: 0 & 180 deg = Horizontal, 90 & 270 deg = Vertical
+            const isHorizontalTrack = (track.rotation === 0 || track.rotation === 180);
+            const isMovingHorizontal = (dish.dir === 0 || dish.dir === 2);
+
+            if (isHorizontalTrack !== isMovingHorizontal) {
+              dish.active = false; // Derail if direction mismatch
+            }
+          }
+        }
       }
 
+      // Customer Target Check
       const distToCustomer = Math.hypot(
         dish.x - (customer.x * GRID_SIZE + GRID_SIZE / 2),
         dish.y - (customer.y * GRID_SIZE + GRID_SIZE / 2)
       );
 
-      if (distToCustomer < 16) {
+      if (distToCustomer < 12) {
         score += 100;
         document.getElementById('score').innerText = score;
         resetDish();
         alert('🍲 Delivery Successful!');
       }
 
+      // Out of bounds reset
       if (dish.x < 0 || dish.x > canvas.width || dish.y < 0 || dish.y > canvas.height) {
         resetDish();
       }
@@ -212,9 +265,22 @@
       if (loadedStatus[t.type]) {
         ctx.drawImage(images[t.type], -GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE, GRID_SIZE);
       } else {
-        // Fallback styling if image fails to load
+        // Fallback placeholder rendering with center track lines
         ctx.fillStyle = t.type === 'boost' ? '#ffe600' : '#4deeea';
         ctx.fillRect(-GRID_SIZE / 2 + 2, -GRID_SIZE / 2 + 2, GRID_SIZE - 4, GRID_SIZE - 4);
+        
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        if (t.type === 'straight' || t.type === 'boost') {
+          // Horizontal guide line relative to tile angle
+          ctx.moveTo(-GRID_SIZE / 2, 0);
+          ctx.lineTo(GRID_SIZE / 2, 0);
+        } else if (t.type === 'turn') {
+          // Curved guide line
+          ctx.arc(-GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE / 2, 0, Math.PI / 2);
+        }
+        ctx.stroke();
       }
       ctx.restore();
     }

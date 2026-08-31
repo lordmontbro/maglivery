@@ -73,19 +73,22 @@
     const ctx = canvas.getContext('2d');
 
     const GRID_SIZE = 40;
+    
+    // Absolute GitHub URLs (Note: path set to gamestacks)
     const imageSources = {
-      straight: 'images/gametracks/straight.png',
-      turn: 'images/gametracks/turn.png',
-      boost: 'images/gametracks/boost.png',
-      dish: 'images/gametracks/dish.png'
+      straight: 'https://lordmontbro.github.io/maglivery/images/gamestacks/straight.png',
+      turn: 'https://lordmontbro.github.io/maglivery/images/gamestacks/90turn.png',
+      boost: 'https://lordmontbro.github.io/maglivery/images/gamestacks/boost.png',
+      dish: 'https://lordmontbro.github.io/maglivery/images/gamestacks/dish.png'
     };
 
     const images = {};
     const loadedStatus = {};
 
-    // Load Images with Status Tracking
+    // Load Hosted Images
     for (let key in imageSources) {
       images[key] = new Image();
+      images[key].crossOrigin = 'anonymous'; // Prevents CORS canvas blocking
       images[key].src = imageSources[key];
       loadedStatus[key] = false;
       images[key].onload = () => { loadedStatus[key] = true; };
@@ -109,7 +112,7 @@
       speed: 3
     };
 
-    // UI Listeners
+    // UI Control Listeners
     document.getElementById('tool-straight').addEventListener('click', (e) => setTool('straight', e.target));
     document.getElementById('tool-turn').addEventListener('click', (e) => setTool('turn', e.target));
     document.getElementById('tool-boost').addEventListener('click', (e) => setTool('boost', e.target));
@@ -209,15 +212,9 @@
       if (loadedStatus[t.type]) {
         ctx.drawImage(images[t.type], -GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE, GRID_SIZE);
       } else {
-        // Fallback Vector Rendering if image path fails
+        // Fallback styling if image fails to load
         ctx.fillStyle = t.type === 'boost' ? '#ffe600' : '#4deeea';
         ctx.fillRect(-GRID_SIZE / 2 + 2, -GRID_SIZE / 2 + 2, GRID_SIZE - 4, GRID_SIZE - 4);
-        ctx.fillStyle = '#000';
-        if (t.type === 'turn') {
-          ctx.beginPath();
-          ctx.arc(-GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE / 2, 0, Math.PI / 2);
-          ctx.stroke();
-        }
       }
       ctx.restore();
     }
@@ -225,7 +222,7 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Grid
+      // Render Grid Lines
       ctx.strokeStyle = '#1e1e1e';
       for (let i = 0; i < canvas.width; i += GRID_SIZE) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -234,18 +231,18 @@
         ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
       }
 
-      // Render Placed Tracks
+      // Render Placed Track Tiles
       for (let key in tracks) {
         drawTile(tracks[key]);
       }
 
-      // Start / End
+      // Render Start & End Zones
       ctx.fillStyle = '#ff0055';
       ctx.fillRect(kitchen.x * GRID_SIZE, kitchen.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
       ctx.fillStyle = '#74ee15';
       ctx.fillRect(customer.x * GRID_SIZE, customer.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
 
-      // Dish Rendering
+      // Render Dish Object
       if (dish.active) {
         if (loadedStatus.dish) {
           ctx.drawImage(images.dish, dish.x - 15, dish.y - 15, 30, 30);

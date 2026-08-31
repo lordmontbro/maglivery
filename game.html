@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maglivery - Magnetic Track Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+    body { background: #1a1a1a; color: #fff; text-align: center; padding: 20px; }
+    h1 { margin-bottom: 5px; color: #4deeea; }
+    p { margin-bottom: 15px; font-size: 0.9rem; color: #ccc; }
+    
+    #game-container {
+      display: inline-block;
+      position: relative;
+      background: #222;
+      border: 2px solid #444;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    canvas { display: block; background: #111; cursor: pointer; }
+
+    .controls {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      transition: 0.2s;
+    }
+
+    button:hover { background: #444; }
+    button.active { background: #4deeea; color: #000; }
+    button#launch-btn { background: #74ee15; color: #000; }
+    button#clear-btn { background: #ff0055; color: #fff; }
+    
+    #stats { margin-top: 10px; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <h1>Maglivery Track Express</h1>
+  <p>Place magnetic tracks to connect the Kitchen to the Customer's table, then hit Launch!</p>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+  </div>
+
+  <div class="controls">
+    <button id="tool-straight" class="active">Straight Track</button>
+    <button id="tool-boost">Mag-Booster (+Speed)</button>
+    <button id="launch-btn">🚀 Launch Delivery</button>
+    <button id="clear-btn">Clear Tracks</button>
+  </div>
+
+  <div id="stats">Score: <span id="score">0</span></div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const GRID_SIZE = 40;
+    const COLS = canvas.width / GRID_SIZE;
+    const ROWS = canvas.height / GRID_SIZE;
+
+    // Game state
+    let selectedTool = 'straight';
+    let tracks = {}; // Key format: "x,y"
+    let score = 0;
+
+    // Fixed Nodes
+    const kitchen = { x: 1, y: 5 };
+    const customer = { x: 13, y: 5 };
+
+    // Delivery Vehicle (Dish)
+    let dish = {
+      x: kitchen.x * GRID_SIZE + GRID_SIZE / 2,
+      y: kitchen.y * GRID_SIZE + GRID_SIZE / 2,
+      vx: 0,
+      vy: 0,
+      active: false,
+      speed: 3
+    };
+
+    // UI Buttons
+    document.getElementById('tool-straight').addEventListener('click', (e) => setTool('straight', e.target));
+    document.getElementById('tool-boost').addEventListener('click', (e) => setTool('boost', e.target));
+    document.getElementById('clear-btn').addEventListener('click', clearBoard);
+    document.getElementById('launch-btn').addEventListener('click', launchDish);
+
+    function setTool(tool, element) {
+      selectedTool = tool;
+      document.querySelectorAll('.controls button').forEach(b => {
+        if (b.id.startsWith('tool-')) b.classList.remove('active');
+      });
+      element.classList.add('active');
+    }
+
+    // Grid placement
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const gridX = Math.floor((e.clientX - rect.left) / GRID_SIZE);
+      const gridY = Math.floor((e.clientY - rect.top) / GRID_SIZE);
+
+      // Prevent placing over Start/End points
+      if ((gridX === kitchen.x && gridY === kitchen.y) || 
+          (gridX === customer.x && gridY === customer.y)) return;
+
+      const key = `${gridX},${gridY}`;
+      if (tracks[key] && tracks[key].type === selectedTool) {
+        delete tracks[key]; // Toggle off
+      } else {
+        tracks[key] = { type: selectedTool, x: gridX, y: gridY };
+      }
+    });
+
+    function clearBoard() {
+      tracks = {};
+      resetDish();
+    }
+
+    function launchDish() {
+      if (dish.active) return;
+      resetDish();
+      dish.active = true;
+      dish.vx = dish.speed; // Start moving right towards grid
+    }
+
+    function resetDish() {
+      dish.x = kitchen.x * GRID_SIZE + GRID_SIZE / 2;
+      dish.y = kitchen.y * GRID_SIZE + GRID_SIZE / 2;
+      dish.vx = 0;
+      dish.vy = 0;
+      dish.active = false;
+      dish.speed = 3;
+    }
+
+    function update() {
+      if (dish.active) {
+        // Move dish
+        dish.x += dish.vx;
+        dish.y += dish.vy;
+
+        // Check track interaction
+        const currentGridX = Math.floor(dish.x / GRID_SIZE);
+        const currentGridY = Math.floor(dish.y / GRID_SIZE);
+        const key = `${currentGridX},${currentGridY}`;
+
+        if (tracks[key]) {
+          if (tracks[key].type === 'boost') {
+            // Accelerate in current direction
+            if (dish.vx > 0) dish.vx = 6;
+            if (dish.vx < 0) dish.vx = -6;
+            if (dish.vy > 0) dish.vy = 6;
+            if (dish.vy < 0) dish.vy = -6;
+          }
+        }
+
+        // Win Condition
+        const distToCustomer = Math.hypot(
+          dish.x - (customer.x * GRID_SIZE + GRID_SIZE / 2),
+          dish.y - (customer.y * GRID_SIZE + GRID_SIZE / 2)
+        );
+
+        if (distToCustomer < 15) {
+          score += 100;
+          document.getElementById('score').innerText = score;
+          resetDish();
+          alert('🍲 Delivery Successful! +100 Points');
+        }
+
+        // Out of bounds check
+        if (dish.x < 0 || dish.x > canvas.width || dish.y < 0 || dish.y > canvas.height) {
+          resetDish();
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Grid Lines
+      ctx.strokeStyle = '#222';
+      for (let i = 0; i < canvas.width; i += GRID_SIZE) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+      }
+      for (let j = 0; j < canvas.height; j += GRID_SIZE) {
+        ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+      }
+
+      // Draw Placed Magnetic Tracks
+      for (let key in tracks) {
+        const t = tracks[key];
+        ctx.fillStyle = t.type === 'boost' ? '#ffe600' : '#4deeea';
+        ctx.fillRect(t.x * GRID_SIZE + 4, t.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+        
+        // Magnet Core Effect
+        ctx.fillStyle = '#111';
+        ctx.fillRect(t.x * GRID_SIZE + 14, t.y * GRID_SIZE + 14, GRID_SIZE - 28, GRID_SIZE - 28);
+      }
+
+      // Draw Kitchen (Start)
+      ctx.fillStyle = '#ff0055';
+      ctx.fillRect(kitchen.x * GRID_SIZE, kitchen.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+      ctx.fillStyle = '#fff';
+      ctx.fillText('🍳 Kitchen', kitchen.x * GRID_SIZE - 5, kitchen.y * GRID_SIZE - 5);
+
+      // Draw Customer (End)
+      ctx.fillStyle = '#74ee15';
+      ctx.fillRect(customer.x * GRID_SIZE, customer.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+      ctx.fillStyle = '#fff';
+      ctx.fillText('😋 Target', customer.x * GRID_SIZE - 5, customer.y * GRID_SIZE - 5);
+
+      // Draw Delivery Dish
+      if (dish.active) {
+        ctx.beginPath();
+        ctx.arc(dish.x, dish.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#4deeea';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>

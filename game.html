@@ -96,21 +96,21 @@
     }
 
     let selectedTool = 'straight';
-    let currentRotation = 0; // 0, 90, 180, 270
+    let currentRotation = 0;
     let tracks = {};
     let score = 0;
 
     const kitchen = { x: 1, y: 5 };
     const customer = { x: 14, y: 5 };
 
-    // Movement Directions: 0=Right, 1=Down, 2=Left, 3=Up
+    // 0=Right, 1=Down, 2=Left, 3=Up
     const DX = [1, 0, -1, 0];
     const DY = [0, 1, 0, -1];
 
     let dish = {
       x: kitchen.x * GRID_SIZE + GRID_SIZE / 2,
       y: kitchen.y * GRID_SIZE + GRID_SIZE / 2,
-      dir: 0, // Starts moving Right
+      dir: 0,
       active: false,
       speed: 2,
       lastGridX: -1,
@@ -160,7 +160,7 @@
       if (dish.active) return;
       resetDish();
       dish.active = true;
-      dish.dir = 0; // Move right initially
+      dish.dir = 0;
     }
 
     function resetDish() {
@@ -176,7 +176,6 @@
     function update() {
       if (!dish.active) return;
 
-      // Move dish based on current direction
       dish.x += DX[dish.dir] * dish.speed;
       dish.y += DY[dish.dir] * dish.speed;
 
@@ -185,7 +184,6 @@
       const cellCenterX = gridX * GRID_SIZE + GRID_SIZE / 2;
       const cellCenterY = gridY * GRID_SIZE + GRID_SIZE / 2;
 
-      // Check turning at cell centers
       const distToCenter = Math.hypot(dish.x - cellCenterX, dish.y - cellCenterY);
 
       if (distToCenter < dish.speed && (gridX !== dish.lastGridX || gridY !== dish.lastGridY)) {
@@ -193,7 +191,6 @@
         const track = tracks[key];
 
         if (track) {
-          // Center the dish precisely
           dish.x = cellCenterX;
           dish.y = cellCenterY;
           dish.lastGridX = gridX;
@@ -204,38 +201,36 @@
           }
 
           if (track.type === 'turn') {
-            // Path logic based on 90-degree curve rotation
             const rot = track.rotation;
+            // Updated turn mappings matching exact curved path orientations:
             if (rot === 0) {
-              if (dish.dir === 0) dish.dir = 1;      // Right -> Down
-              else if (dish.dir === 3) dish.dir = 2; // Up -> Left
-              else dish.active = false;              // Derail
+              if (dish.dir === 0) dish.dir = 3;      // Right -> Up
+              else if (dish.dir === 1) dish.dir = 2; // Down -> Left
+              else dish.active = false;
             } else if (rot === 90) {
-              if (dish.dir === 1) dish.dir = 2;      // Down -> Left
-              else if (dish.dir === 0) dish.dir = 3; // Right -> Up
+              if (dish.dir === 1) dish.dir = 0;      // Down -> Right
+              else if (dish.dir === 2) dish.dir = 3; // Left -> Up
               else dish.active = false;
             } else if (rot === 180) {
-              if (dish.dir === 2) dish.dir = 3;      // Left -> Up
-              else if (dish.dir === 1) dish.dir = 0; // Down -> Right
+              if (dish.dir === 2) dish.dir = 1;      // Left -> Down
+              else if (dish.dir === 3) dish.dir = 0; // Up -> Right
               else dish.active = false;
             } else if (rot === 270) {
-              if (dish.dir === 3) dish.dir = 0;      // Up -> Right
-              else if (dish.dir === 2) dish.dir = 1; // Left -> Down
+              if (dish.dir === 3) dish.dir = 2;      // Up -> Left
+              else if (dish.dir === 0) dish.dir = 1; // Right -> Down
               else dish.active = false;
             }
-          } else if (track.type === 'straight') {
-            // Check alignment: 0 & 180 deg = Horizontal, 90 & 270 deg = Vertical
+          } else if (track.type === 'straight' || track.type === 'boost') {
             const isHorizontalTrack = (track.rotation === 0 || track.rotation === 180);
             const isMovingHorizontal = (dish.dir === 0 || dish.dir === 2);
 
             if (isHorizontalTrack !== isMovingHorizontal) {
-              dish.active = false; // Derail if direction mismatch
+              dish.active = false;
             }
           }
         }
       }
 
-      // Customer Target Check
       const distToCustomer = Math.hypot(
         dish.x - (customer.x * GRID_SIZE + GRID_SIZE / 2),
         dish.y - (customer.y * GRID_SIZE + GRID_SIZE / 2)
@@ -248,7 +243,6 @@
         alert('🍲 Delivery Successful!');
       }
 
-      // Out of bounds reset
       if (dish.x < 0 || dish.x > canvas.width || dish.y < 0 || dish.y > canvas.height) {
         resetDish();
       }
@@ -265,7 +259,6 @@
       if (loadedStatus[t.type]) {
         ctx.drawImage(images[t.type], -GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE, GRID_SIZE);
       } else {
-        // Fallback placeholder rendering with center track lines
         ctx.fillStyle = t.type === 'boost' ? '#ffe600' : '#4deeea';
         ctx.fillRect(-GRID_SIZE / 2 + 2, -GRID_SIZE / 2 + 2, GRID_SIZE - 4, GRID_SIZE - 4);
         
@@ -273,11 +266,9 @@
         ctx.lineWidth = 4;
         ctx.beginPath();
         if (t.type === 'straight' || t.type === 'boost') {
-          // Horizontal guide line relative to tile angle
           ctx.moveTo(-GRID_SIZE / 2, 0);
           ctx.lineTo(GRID_SIZE / 2, 0);
         } else if (t.type === 'turn') {
-          // Curved guide line
           ctx.arc(-GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE / 2, 0, Math.PI / 2);
         }
         ctx.stroke();
@@ -288,7 +279,6 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Grid Lines
       ctx.strokeStyle = '#1e1e1e';
       for (let i = 0; i < canvas.width; i += GRID_SIZE) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -297,18 +287,15 @@
         ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
       }
 
-      // Render Placed Track Tiles
       for (let key in tracks) {
         drawTile(tracks[key]);
       }
 
-      // Render Start & End Zones
       ctx.fillStyle = '#ff0055';
       ctx.fillRect(kitchen.x * GRID_SIZE, kitchen.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
       ctx.fillStyle = '#74ee15';
       ctx.fillRect(customer.x * GRID_SIZE, customer.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
 
-      // Render Dish Object
       if (dish.active) {
         if (loadedStatus.dish) {
           ctx.drawImage(images.dish, dish.x - 15, dish.y - 15, 30, 30);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maglivery - Visual Magnetic Track Builder</title>
+  <title>Maglivery Express</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background: #121212; color: #fff; text-align: center; padding: 20px; }
@@ -73,11 +73,6 @@
     const ctx = canvas.getContext('2d');
 
     const GRID_SIZE = 40;
-    const COLS = canvas.width / GRID_SIZE;
-    const ROWS = canvas.height / GRID_SIZE;
-
-    // Load Track Images from images/gametracks/
-    const images = {};
     const imageSources = {
       straight: 'images/gametracks/straight.png',
       turn: 'images/gametracks/turn.png',
@@ -85,28 +80,26 @@
       dish: 'images/gametracks/dish.png'
     };
 
-    let loadedImagesCount = 0;
-    const totalImages = Object.keys(imageSources).length;
+    const images = {};
+    const loadedStatus = {};
 
+    // Load Images with Status Tracking
     for (let key in imageSources) {
       images[key] = new Image();
       images[key].src = imageSources[key];
-      images[key].onload = () => {
-        loadedImagesCount++;
-      };
+      loadedStatus[key] = false;
+      images[key].onload = () => { loadedStatus[key] = true; };
+      images[key].onerror = () => { loadedStatus[key] = false; };
     }
 
-    // Game state
     let selectedTool = 'straight';
-    let currentRotation = 0; // 0, 90, 180, 270 degrees
-    let tracks = {}; // Key: "x,y", Value: { type, rotation }
+    let currentRotation = 0;
+    let tracks = {};
     let score = 0;
 
-    // Delivery Nodes
     const kitchen = { x: 1, y: 5 };
     const customer = { x: 14, y: 5 };
 
-    // Delivery Dish State
     let dish = {
       x: kitchen.x * GRID_SIZE + GRID_SIZE / 2,
       y: kitchen.y * GRID_SIZE + GRID_SIZE / 2,
@@ -116,14 +109,13 @@
       speed: 3
     };
 
-    // UI Event Listeners
+    // UI Listeners
     document.getElementById('tool-straight').addEventListener('click', (e) => setTool('straight', e.target));
     document.getElementById('tool-turn').addEventListener('click', (e) => setTool('turn', e.target));
     document.getElementById('tool-boost').addEventListener('click', (e) => setTool('boost', e.target));
     document.getElementById('clear-btn').addEventListener('click', clearBoard);
     document.getElementById('launch-btn').addEventListener('click', launchDish);
 
-    // Keyboard rotation shortcut
     window.addEventListener('keydown', (e) => {
       if (e.key === 'r' || e.key === 'R') {
         currentRotation = (currentRotation + 90) % 360;
@@ -138,7 +130,6 @@
       element.classList.add('active');
     }
 
-    // Grid placement
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
       const gridX = Math.floor((e.clientX - rect.left) / GRID_SIZE);
@@ -155,10 +146,7 @@
       }
     });
 
-    function clearBoard() {
-      tracks = {};
-      resetDish();
-    }
+    function clearBoard() { tracks = {}; resetDish(); }
 
     function launchDish() {
       if (dish.active) return;
@@ -186,17 +174,13 @@
       const currentGridY = Math.floor(dish.y / GRID_SIZE);
       const key = `${currentGridX},${currentGridY}`;
 
-      if (tracks[key]) {
-        const track = tracks[key];
-        if (track.type === 'boost') {
-          if (dish.vx > 0) dish.vx = 7;
-          if (dish.vx < 0) dish.vx = -7;
-          if (dish.vy > 0) dish.vy = 7;
-          if (dish.vy < 0) dish.vy = -7;
-        }
+      if (tracks[key] && tracks[key].type === 'boost') {
+        if (dish.vx > 0) dish.vx = 7;
+        if (dish.vx < 0) dish.vx = -7;
+        if (dish.vy > 0) dish.vy = 7;
+        if (dish.vy < 0) dish.vy = -7;
       }
 
-      // Customer Arrival Check
       const distToCustomer = Math.hypot(
         dish.x - (customer.x * GRID_SIZE + GRID_SIZE / 2),
         dish.y - (customer.y * GRID_SIZE + GRID_SIZE / 2)
@@ -206,30 +190,42 @@
         score += 100;
         document.getElementById('score').innerText = score;
         resetDish();
-        alert('🍲 Delivery Delivered Successfully!');
+        alert('🍲 Delivery Successful!');
       }
 
-      // Out of bounds reset
       if (dish.x < 0 || dish.x > canvas.width || dish.y < 0 || dish.y > canvas.height) {
         resetDish();
       }
     }
 
-    function drawRotatedTile(img, x, y, angleDeg) {
-      const centerX = x * GRID_SIZE + GRID_SIZE / 2;
-      const centerY = y * GRID_SIZE + GRID_SIZE / 2;
+    function drawTile(t) {
+      const centerX = t.x * GRID_SIZE + GRID_SIZE / 2;
+      const centerY = t.y * GRID_SIZE + GRID_SIZE / 2;
 
       ctx.save();
       ctx.translate(centerX, centerY);
-      ctx.rotate((angleDeg * Math.PI) / 180);
-      ctx.drawImage(img, -GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE, GRID_SIZE);
+      ctx.rotate((t.rotation * Math.PI) / 180);
+
+      if (loadedStatus[t.type]) {
+        ctx.drawImage(images[t.type], -GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE, GRID_SIZE);
+      } else {
+        // Fallback Vector Rendering if image path fails
+        ctx.fillStyle = t.type === 'boost' ? '#ffe600' : '#4deeea';
+        ctx.fillRect(-GRID_SIZE / 2 + 2, -GRID_SIZE / 2 + 2, GRID_SIZE - 4, GRID_SIZE - 4);
+        ctx.fillStyle = '#000';
+        if (t.type === 'turn') {
+          ctx.beginPath();
+          ctx.arc(-GRID_SIZE / 2, -GRID_SIZE / 2, GRID_SIZE / 2, 0, Math.PI / 2);
+          ctx.stroke();
+        }
+      }
       ctx.restore();
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Grid Lines
+      // Grid
       ctx.strokeStyle = '#1e1e1e';
       for (let i = 0; i < canvas.width; i += GRID_SIZE) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -238,40 +234,22 @@
         ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
       }
 
-      // Render Tracks using images
+      // Render Placed Tracks
       for (let key in tracks) {
-        const t = tracks[key];
-        const img = images[t.type];
-        if (img && img.complete) {
-          drawRotatedTile(img, t.x, t.y, t.rotation);
-        }
+        drawTile(tracks[key]);
       }
 
-      // Render Kitchen
+      // Start / End
       ctx.fillStyle = '#ff0055';
       ctx.fillRect(kitchen.x * GRID_SIZE, kitchen.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('Kitchen', kitchen.x * GRID_SIZE + 2, kitchen.y * GRID_SIZE + 24);
-
-      // Render Customer Target
       ctx.fillStyle = '#74ee15';
       ctx.fillRect(customer.x * GRID_SIZE, customer.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
-      ctx.fillStyle = '#000';
-      ctx.fillText('Target', customer.x * GRID_SIZE + 3, customer.y * GRID_SIZE + 24);
 
-      // Render Dish
+      // Dish Rendering
       if (dish.active) {
-        if (images.dish && images.dish.complete) {
-          ctx.drawImage(
-            images.dish, 
-            dish.x - GRID_SIZE / 2, 
-            dish.y - GRID_SIZE / 2, 
-            GRID_SIZE, 
-            GRID_SIZE
-          );
+        if (loadedStatus.dish) {
+          ctx.drawImage(images.dish, dish.x - 15, dish.y - 15, 30, 30);
         } else {
-          // Fallback if dish image fails to load
           ctx.beginPath();
           ctx.arc(dish.x, dish.y, 10, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';

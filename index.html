@@ -1370,7 +1370,13 @@
           <input type="text" required placeholder="123">
         </div>
       </div>
-
+      
+      <div class="promo-section">
+        <input type="text" id="promo-code-input" placeholder="Enter promo code" />
+        <button id="apply-code-btn">Apply Code</button>
+        <p id="promo-message"></p>
+      </div>
+      
       <div style="margin-top:1.5rem; border-top: 1px solid var(--border-color); padding-top:1rem;">
         <div style="display:flex; justify-content:space-between; margin-bottom: 0.5rem;">
           <span>Total Due:</span>
@@ -1532,6 +1538,52 @@
     };
 
     let cart = [];
+
+    let cartTotal = 100.00; // Replace with your dynamic total variable
+
+  document.getElementById('apply-code-btn').addEventListener('click', async () => {
+    const inputCode = document.getElementById('promo-code-input').value.trim().toUpperCase();
+    const messageEl = document.getElementById('promo-message');
+
+    if (!inputCode) {
+      messageEl.textContent = 'Please enter a code.';
+      return;
+    }
+
+    try {
+      // Fetch the CODES.txt file from your site
+      const response = await fetch('./CODES.txt');
+      if (!response.ok) throw new Error('Could not load code file.');
+
+      const textData = await response.text();
+      
+      // Parse lines into a key-value object
+      const codes = {};
+      textData.split('\n').forEach(line => {
+        const [code, discount] = line.trim().split(',');
+        if (code && discount) {
+          codes[code.toUpperCase()] = parseFloat(discount);
+        }
+      });
+
+      // Check if code exists
+      if (codes[inputCode]) {
+        const discountPercent = codes[inputCode];
+        const discountAmount = (cartTotal * discountPercent) / 100;
+        const finalTotal = cartTotal - discountAmount;
+
+        messageEl.style.color = 'green';
+        messageEl.textContent = `Success! ${discountPercent}% off applied. New total: $${finalTotal.toFixed(2)}`;
+      } else {
+        messageEl.style.color = 'red';
+        messageEl.textContent = 'Invalid promo code.';
+      }
+    } catch (error) {
+      console.error(error);
+      messageEl.style.color = 'red';
+      messageEl.textContent = 'Error verifying code.';
+    }
+  });
 
     // Helper: Calculate discount rate for track pieces (5% per 20 units, max 50%)
     function getDiscountFactor(qty) {

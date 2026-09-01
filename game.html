@@ -307,6 +307,15 @@
         }
       }
     }
+        // Notify main page of score updates
+function sendScoreToParent(score) {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'GAME_OVER',
+      score: score
+    }, 'https://lordmontbro.github.io');
+  }
+}
 
     function gameLoop() {
       update();
